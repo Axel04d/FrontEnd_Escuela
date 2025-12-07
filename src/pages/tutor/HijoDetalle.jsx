@@ -4,6 +4,10 @@ import api from "../../api/api.js";
 
 import {
   UserIcon,
+  AcademicCapIcon,
+  ClipboardDocumentListIcon,
+  FaceSmileIcon,
+  FaceFrownIcon,
   BookOpenIcon,
   BellIcon,
 } from "@heroicons/react/24/outline";
@@ -31,18 +35,21 @@ export default function HijoDetalle() {
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ================================
+  // 🔵 Cargar datos EXACTAMENTE como VerAlumno.jsx
+  // ================================
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        // === ALUMNO ===
-        const alumnoRes = await api.get(`/tutor/hijo/${id}`);
+        // 🧑‍🎓 Alumno
+        const alumnoRes = await api.get(`/alumnos/${id}`);
         setAlumno(alumnoRes.data);
 
-        // === MATERIAS DEL ALUMNO ===
-        const materiasRes = await api.get(`/tutor/hijo/${id}/materias`);
+        // 📘 Materias reales
+        const materiasRes = await api.get(`/alumnomateria/alumno/${id}`);
         setMaterias(materiasRes.data);
 
-        // === NOTIFICACIONES para este hijo ===
+        // 🔔 Notificaciones
         const notiRes = await api.get(`/notificaciones/alumno/${id}`);
         setNotificaciones(notiRes.data);
 
@@ -61,28 +68,23 @@ export default function HijoDetalle() {
 
   return (
     <div className="space-y-10">
-
-      {/* 🔙 Botón volver */}
       <BotonRegresar />
 
-      {/* ===========================
-              INFORMACIÓN DEL ALUMNO
-      ============================ */}
+      {/* ================= INFORMACIÓN GENERAL ================= */}
       <div className="bg-white p-6 rounded-xl shadow flex items-center gap-6">
         <UserIcon className="h-16 w-16 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold">
             {alumno.nombre} {alumno.apellidos}
           </h1>
+
           <p className="text-gray-500">
-            Grupo: {alumno.grupo?.nombre || alumno.grupo || "—"}
+            {alumno.tb_grupo?.grado} • Grupo {alumno.tb_grupo?.grupo}
           </p>
         </div>
       </div>
 
-      {/* ===========================
-              MATERIAS + CALIFICACIONES
-      ============================ */}
+      {/* ================= MATERIAS ================= */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <BookOpenIcon className="h-6 w-6 text-purple-600" />
@@ -104,7 +106,7 @@ export default function HijoDetalle() {
               {materias.map((m) => (
                 <tr key={m.id_materia}>
                   <td className="p-3 border">
-                    {m.tb_materia?.nombre_materia || m.nombre_materia || "Materia"}
+                    {m.tb_materia?.nombre_materia || "Materia sin nombre"}
                   </td>
                   <td className="p-3 border text-center font-semibold">
                     {m.calificacion ?? "—"}
@@ -116,9 +118,7 @@ export default function HijoDetalle() {
         )}
       </section>
 
-      {/* ===========================
-              NOTIFICACIONES
-      ============================ */}
+      {/* ================= NOTIFICACIONES ================= */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <BellIcon className="h-6 w-6 text-gray-700" />
@@ -126,7 +126,7 @@ export default function HijoDetalle() {
         </h2>
 
         {notificaciones.length === 0 ? (
-          <p className="text-gray-500">No hay notificaciones recibidas.</p>
+          <p className="text-gray-500">No hay notificaciones.</p>
         ) : (
           <ul className="space-y-4">
             {notificaciones.map((n) => (

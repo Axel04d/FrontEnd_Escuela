@@ -7,22 +7,21 @@ import { Outlet } from "react-router-dom";
 export default function Layout() {
   const { user } = useContext(AuthContext);
 
-  // Si no hay usuario → se asume ADMIN por defecto
-  const rol = user?.rol || "admin";
+  // 🔵 Si no hay sesión → ADMIN por defecto
+  const rol = user?.rol ?? "admin";
 
   return (
     <div className="min-h-screen flex">
 
-      {/* SIDEBAR con menú dinámico */}
+      {/* SIDEBAR */}
       <Sidebar rol={rol} />
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 ml-64 bg-gray-100 min-h-screen">
 
-        {/* Encabezado */}
-        <Header />
+        {/* HEADER (maneja user null sin problema) */}
+        <Header user={user} />
 
-        {/* Rutas internas */}
         <div className="p-10">
           <Outlet />
         </div>

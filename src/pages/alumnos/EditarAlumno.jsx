@@ -67,7 +67,7 @@ export default function EditarAlumno() {
       });
 
       alert("Alumno actualizado correctamente.");
-      navigate("/alumnos");
+      navigate("/app/alumnos");
 
     } catch (error) {
       console.error("Error actualizando:", error.response?.data || error);
@@ -153,7 +153,7 @@ export default function EditarAlumno() {
 
           <button
             className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
-            onClick={() => navigate("/alumnos")}
+            onClick={() => navigate("/app/alumnos")}
           >
             Cancelar
           </button>

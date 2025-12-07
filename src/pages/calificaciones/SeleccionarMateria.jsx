@@ -14,6 +14,8 @@ export default function SeleccionarMateria() {
     const cargarMateriasDelGrupo = async () => {
       try {
         const alumnosRes = await api.get("/alumnos");
+
+        // Alumnos del grupo
         const alumnosGrupo = alumnosRes.data.filter(
           (a) => Number(a.id_grupo) === Number(id)
         );
@@ -24,30 +26,38 @@ export default function SeleccionarMateria() {
           return;
         }
 
-        const relaciones = [];
+        let relaciones = [];
 
+        // Obtener materias de cada alumno
         for (const alumno of alumnosGrupo) {
-          const res = await api.get(
-            `/alumnomateria/alumno/${alumno.id_alumno}`
-          );
-          relaciones.push(...res.data);
+          try {
+            const res = await api.get(
+              `/alumnomateria/alumno/${alumno.id_alumno}`
+            );
+            relaciones.push(...res.data);
+          } catch {
+            console.warn("Error en relación de alumno:", alumno.id_alumno);
+          }
         }
 
-        // Extraer materias únicas
+        // Materias únicas
         const materiasUnicas = [];
 
         relaciones.forEach((rel) => {
-          if (
-            !materiasUnicas.some(
-              (m) => m.id_materia === rel.id_materia
-            )
-          ) {
+          if (!rel.tb_materia) return;
+
+          if (!materiasUnicas.some((m) => m.id_materia === rel.id_materia)) {
             materiasUnicas.push({
               id_materia: rel.id_materia,
-              nombre_materia: rel.tb_materia?.nombre_materia,
+              nombre_materia: rel.tb_materia.nombre_materia,
             });
           }
         });
+
+        // Orden alfabético
+        materiasUnicas.sort((a, b) =>
+          a.nombre_materia.localeCompare(b.nombre_materia)
+        );
 
         setMaterias(materiasUnicas);
       } catch (error) {
@@ -74,7 +84,7 @@ export default function SeleccionarMateria() {
             key={m.id_materia}
             className="bg-white shadow rounded-xl p-6 hover:shadow-lg transition cursor-pointer"
             onClick={() =>
-              navigate(`/grupos/${id}/calificaciones/${m.id_materia}`)
+              navigate(`/app/grupos/${id}/calificaciones/${m.id_materia}`)
             }
           >
             <div className="flex items-center gap-3">

@@ -23,8 +23,12 @@ export default function NotificacionesAlumno() {
 
         {notificaciones.map((n) => (
           <div key={n.id_notificacion} className="p-4 border rounded-lg">
-            <p className="font-semibold">De: {n.tb_docente.nombre} {n.tb_docente.apellidos}</p>
+            <p className="font-semibold">
+              De: {n.tb_docente?.nombre} {n.tb_docente?.apellidos}
+            </p>
+
             <p className="mt-2">{n.mensaje}</p>
+
             <p className="text-xs text-gray-500 mt-2">
               {n.fecha_envio} — {n.hora_envio}
             </p>

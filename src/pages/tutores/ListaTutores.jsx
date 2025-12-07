@@ -17,7 +17,7 @@ export default function ListaTutores() {
 
       const alumnos = resAlumnos.data;
 
-      // unir alumnos con su tutor
+      // Unir alumnos con su tutor
       const datos = resTutores.data.map((tutor) => ({
         ...tutor,
         hijos: alumnos.filter((a) => a.id_tutor === tutor.id_tutor),
@@ -54,7 +54,7 @@ export default function ListaTutores() {
 
         <button
           className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 shadow"
-          onClick={() => navigate("/tutores/agregar")}
+          onClick={() => navigate("/app/tutores/agregar")}  // ✔ RUTA CORRECTA
         >
           + Registrar Tutor
         </button>
@@ -68,6 +68,7 @@ export default function ListaTutores() {
             key={t.id_tutor}
             className="bg-white border shadow rounded-xl p-6 hover:shadow-lg transition"
           >
+            {/* Información del Tutor */}
             <div className="flex items-center gap-3">
               <UserIcon className="h-10 w-10 text-purple-600" />
               <div>
@@ -92,6 +93,7 @@ export default function ListaTutores() {
                       <p className="font-semibold">
                         {h.nombre} {h.apellidos}
                       </p>
+
                       <p className="text-sm text-gray-600">
                         {h.tb_grupo?.grado} • Grupo {h.tb_grupo?.grupo}
                       </p>
@@ -107,23 +109,33 @@ export default function ListaTutores() {
 
             {/* Botones */}
             <div className="flex justify-end gap-3 mt-6">
+
+              {/* Editar */}
               <button
                 className="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600"
-                onClick={() => navigate(`/tutores/editar/${t.id_tutor}`)}
+                onClick={() => navigate(`/app/tutores/editar/${t.id_tutor}`)} // ✔ CORREGIDO
               >
                 <PencilIcon className="h-5 w-5" />
               </button>
 
+              {/* Eliminar */}
               <button
                 className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700"
                 onClick={() => borrar(t.id_tutor)}
               >
                 <TrashIcon className="h-5 w-5" />
               </button>
+
             </div>
 
           </div>
         ))}
+
+        {tutores.length === 0 && (
+          <p className="text-gray-500 col-span-3 text-center">
+            No hay tutores registrados.
+          </p>
+        )}
 
       </div>
     </div>

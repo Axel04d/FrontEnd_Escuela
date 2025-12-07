@@ -3,8 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/api.js";
 
 export default function CapturarCalificaciones() {
-  // ⬅️ Coincide EXACTAMENTE con AppRouter
-  const { id, idMateria } = useParams();
+  const { id, idMateria } = useParams(); 
   const navigate = useNavigate();
 
   const id_grupo = id;
@@ -24,21 +23,21 @@ export default function CapturarCalificaciones() {
           return;
         }
 
-        // 1) Grupo
+        // 1. Datos del grupo
         const grupoRes = await api.get(`/grupos/${id_grupo}`);
         setGrupo(grupoRes.data);
 
-        // 2) Materia
+        // 2. Datos de la materia
         const materiaRes = await api.get(`/materias/${id_materia}`);
         setMateria(materiaRes.data);
 
-        // 3) Alumnos del grupo
+        // 3. Alumnos del grupo
         const alumnosRes = await api.get("/alumnos");
         const alumnosGrupo = alumnosRes.data.filter(
           (a) => Number(a.id_grupo) === Number(id_grupo)
         );
 
-        // 4) Obtener calificación real
+        // 4. Relación alumno-materia
         const alumnosConCalificacion = await Promise.all(
           alumnosGrupo.map(async (al) => {
             try {
@@ -72,6 +71,7 @@ export default function CapturarCalificaciones() {
     cargarDatos();
   }, [id_grupo, id_materia]);
 
+
   const actualizarCalificacion = (idAlumno, valor) => {
     if (valor < 0) valor = 0;
     if (valor > 10) valor = 10;
@@ -83,10 +83,11 @@ export default function CapturarCalificaciones() {
     );
   };
 
+
   const guardar = async () => {
     try {
       for (const al of alumnos) {
-        // Si NO existe relación → la creamos
+        // Crear relación si no existe
         if (!al.relacionExiste) {
           await api.post("/alumnomateria", {
             id_alumno: al.id_alumno,
@@ -94,7 +95,7 @@ export default function CapturarCalificaciones() {
           });
         }
 
-        // Actualizamos calificación
+        // Actualizar calificación
         await api.put(`/alumnomateria/${al.id_alumno}/${id_materia}`, {
           calificacion:
             al.calificacion === "" || al.calificacion === null
@@ -104,12 +105,16 @@ export default function CapturarCalificaciones() {
       }
 
       alert("Calificaciones guardadas correctamente.");
-      navigate(`/grupos/${id_grupo}/calificaciones`);
+
+      // CORREGIDO: regresar al selector de materias del grupo
+      navigate(`/app/grupos/${id_grupo}/calificaciones`);
+
     } catch (error) {
       console.error(error);
-      alert("Ocurrió un error al guardar las calificaciones.");
+      alert("Error al guardar calificaciones.");
     }
   };
+
 
   if (loading)
     return <p className="text-gray-400 animate-pulse">Cargando datos...</p>;

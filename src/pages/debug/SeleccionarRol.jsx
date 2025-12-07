@@ -3,17 +3,24 @@ import React from "react";
 export default function SeleccionarRol() {
 
   const setRol = (rol) => {
+
     if (rol === "admin") {
-      localStorage.removeItem("user"); // Admin no necesita login
+      // Admin sin login
+      localStorage.removeItem("usuario");
+      localStorage.removeItem("token");
     } else {
-      const user = {
+      // Simulación de login
+      const usuario = {
         nombre: rol === "docente" ? "Docente Demo" : "Tutor Demo",
         rol: rol,
-        id_usuario: rol === "docente" ? 10 : 20
       };
-      localStorage.setItem("user", JSON.stringify(user));
+
+      // Guardar como lo usa AuthContext
+      localStorage.setItem("usuario", JSON.stringify(usuario));
+      localStorage.setItem("token", "token-demo");
     }
 
+    // Redirigir al APP
     location.href = "/app";
   };
 
@@ -23,7 +30,7 @@ export default function SeleccionarRol() {
         <h1 className="text-2xl font-bold">Seleccionar Rol de Prueba</h1>
         <p className="text-gray-600">Esto es solo para pruebas sin backend</p>
 
-        {/* BOTÓN ADMIN */}
+        {/* ADMIN */}
         <button
           onClick={() => setRol("admin")}
           className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
@@ -31,7 +38,7 @@ export default function SeleccionarRol() {
           Entrar como ADMIN
         </button>
 
-        {/* BOTÓN DOCENTE */}
+        {/* DOCENTE */}
         <button
           onClick={() => setRol("docente")}
           className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
@@ -39,7 +46,7 @@ export default function SeleccionarRol() {
           Entrar como DOCENTE
         </button>
 
-        {/* BOTÓN TUTOR */}
+        {/* TUTOR */}
         <button
           onClick={() => setRol("tutor")}
           className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"

@@ -28,7 +28,7 @@ export default function AgregarGrupo() {
     try {
       await api.post("/grupos", form);
       alert("Grupo creado correctamente");
-      navigate("/grupos");
+      navigate("/app/grupos");
     } catch (err) {
       alert("Error al crear el grupo");
     }
@@ -95,7 +95,7 @@ export default function AgregarGrupo() {
 
           <button
             className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
-            onClick={() => navigate("/grupos")}
+            onClick={() => navigate("/app/grupos")}
           >
             Cancelar
           </button>

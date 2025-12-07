@@ -1,15 +1,13 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
+import { AuthContext } from "./AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -22,29 +20,44 @@ export default function Login() {
 
     try {
       const res = await api.post("/auth/login", form);
+      const data = res.data;
 
-      // ======================
-      // GUARDAR SESIÓN LOCAL
-      // ======================
-      localStorage.setItem("token", res.data.accessToken);
-      localStorage.setItem("usuario", JSON.stringify(res.data));
+      console.log("Respuesta login:", data);
 
-      // ======================
-      // REDIRECCIÓN POR ROL
-      // ======================
-      if (res.data.rol === "admin") {
-        navigate("/dashboard");
-      } else if (res.data.rol === "docente") {
-        navigate("/mis-grupos");
-      } else if (res.data.rol === "tutor") {
-        navigate("/tutor/dashboard");
-      } else {
-        navigate("/");
+      // 🔴 VALIDACIÓN MÍNIMA
+      if (!data || !data.rol || !data.accessToken) {
+        throw new Error("Datos inválidos del servidor");
+      }
+
+      // 🔵 GUARDAR SESIÓN COMPLETA EN AuthContext
+      login({
+        id_usuario: data.id_usuario,
+        email: data.email,
+        nombre: data.nombre,
+        rol: data.rol,
+        id_perfil: data.id_perfil,
+        hijos: data.hijos || [], // ⬅️ Para los tutores
+        token: data.accessToken
+      });
+
+      // 🔵 REDIRECCIÓN POR ROL
+      switch (data.rol) {
+        case "admin":
+          navigate("/app/dashboard");
+          break;
+        case "docente":
+          navigate("/app/dashboard-docente");
+          break;
+        case "tutor":
+          navigate("/app/dashboard-tutor");
+          break;
+        default:
+          navigate("/login");
       }
 
     } catch (error) {
-      console.error(error);
-      setErrorMsg("Credenciales incorrectas. Verifique su correo y contraseña.");
+      console.error("Error login:", error);
+      setErrorMsg("Credenciales incorrectas o servidor no disponible.");
     } finally {
       setLoading(false);
     }
@@ -53,13 +66,10 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-600 p-6">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-10 space-y-8">
-
+        
         <h1 className="text-3xl font-bold text-center text-gray-800">
           Iniciar Sesión
         </h1>
-        <p className="text-center text-gray-500 mb-6">
-          Bienvenido al Sistema Escolar
-        </p>
 
         {errorMsg && (
           <p className="text-red-500 text-center font-semibold">
@@ -67,52 +77,36 @@ export default function Login() {
           </p>
         )}
 
-        {/* INPUT EMAIL */}
         <div>
-          <label className="font-semibold text-gray-700">Correo electrónico</label>
+          <label className="font-semibold">Correo</label>
           <input
             name="email"
             type="email"
-            placeholder="ejemplo@gmail.com"
-            className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             onChange={onChange}
-            required
+            className="w-full p-3 border rounded-lg"
           />
         </div>
 
-        {/* INPUT PASSWORD */}
         <div>
-          <label className="font-semibold text-gray-700">Contraseña</label>
+          <label className="font-semibold">Contraseña</label>
           <input
             name="password"
             type="password"
-            placeholder="Ingrese su contraseña"
-            className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             onChange={onChange}
-            required
+            className="w-full p-3 border rounded-lg"
           />
         </div>
 
-        {/* BOTÓN */}
         <button
           disabled={loading}
           onClick={iniciarSesion}
           className={`w-full py-3 rounded-lg text-white font-bold transition ${
-            loading
-              ? "bg-blue-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
+            loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
           {loading ? "Validando..." : "Ingresar"}
         </button>
 
-        {/* LINK ACTIVAR CUENTA */}
-        <p
-          className="text-center text-blue-600 hover:underline cursor-pointer"
-          onClick={() => navigate("/activar-cuenta")}
-        >
-          ¿No tienes contraseña? Activar cuenta
-        </p>
       </div>
     </div>
   );

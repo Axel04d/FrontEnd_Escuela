@@ -53,6 +53,24 @@ export default function ListaNotificaciones() {
                 {n.fecha_envio} — {n.hora_envio}
               </p>
             </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  navigate(`/app/admin/notificaciones/enviar?alumno=${n.id_alumno}&tutor=${n.id_tutor}`)
+                }
+                className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+              >
+                <EnvelopeIcon className="h-5 w-5" />
+              </button>
+
+              <button
+                onClick={() => eliminar(n.id_notificacion)}
+                className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700"
+              >
+                <TrashIcon className="h-5 w-5" />
+              </button>
+            </div>
+
 
             {/* DELETE BUTTON */}
             <button

@@ -39,7 +39,7 @@ export default function EditarTutor() {
     try {
       await api.put(`/tutores/${id}`, form);
       alert("Cambios guardados");
-      navigate("/tutores");
+      navigate("/app/tutores");
     } catch (error) {
       console.error(error);
       alert("Error al actualizar tutor");
@@ -92,7 +92,7 @@ export default function EditarTutor() {
 
           <button
             className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
-            onClick={() => navigate("/tutores")}
+            onClick={() => navigate("/app/tutores")}
           >
             Cancelar
           </button>

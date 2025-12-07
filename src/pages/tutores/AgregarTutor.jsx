@@ -19,7 +19,7 @@ export default function AgregarTutor() {
     try {
       await api.post("/tutores", form);
       alert("Tutor registrado correctamente");
-      navigate("/tutores");
+      navigate("/app/tutores");
     } catch (error) {
       console.error(error);
       alert("Error al registrar tutor. Verifica los datos.");
@@ -89,7 +89,7 @@ export default function AgregarTutor() {
 
           <button
             className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
-            onClick={() => navigate("/tutores")}
+            onClick={() => navigate("/app/tutores")}
           >
             Cancelar
           </button>

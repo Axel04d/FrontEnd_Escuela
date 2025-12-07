@@ -14,7 +14,7 @@ import {
   BookOpenIcon as MateriasIcon,
 } from "@heroicons/react/24/solid";
 
-// 🔙 BOTÓN REUTILIZABLE
+// 🔙 Botón Reutilizable
 function BotonRegresar() {
   const navigate = useNavigate();
   return (
@@ -37,28 +37,20 @@ export default function VerAlumno() {
   const [materias, setMaterias] = useState([]);
   const [notificaciones, setNotificaciones] = useState([]);
   const [conducta, setConducta] = useState({ positivos: 0, negativos: 0 });
-  const [reportes, setReportes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔵 CARGAR TODO DEL BACKEND
+  // CARGAR DATOS
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        // 🧑‍🎓 Alumno completo
         const alumnoRes = await api.get(`/alumnos/${id}`);
         setAlumno(alumnoRes.data);
 
-        // 📘 Materias reales (con relación)
-        const materiasRes = await api.get(`/alumnomateria/alumno/${id}`);
-        setMaterias(materiasRes.data);
+        const materiaRes = await api.get(`/alumnomateria/alumno/${id}`);
+        setMaterias(materiaRes.data);
 
-        // 🔔 Notificaciones reales enviadas a este alumno
         const notiRes = await api.get(`/notificaciones/alumno/${id}`);
         setNotificaciones(notiRes.data);
-
-        // ⚠️ En futuro aquí va conducta real
-        setConducta({ positivos: 0, negativos: 0 });
-        setReportes([]);
 
       } catch (error) {
         console.error("Error al cargar alumno:", error);
@@ -76,18 +68,16 @@ export default function VerAlumno() {
   return (
     <div className="space-y-10">
 
-      {/* 🔙 BOTÓN DE REGRESAR */}
       <BotonRegresar />
 
-      {/* TITULO */}
+      {/* TÍTULO */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">
           Alumno: {alumno.nombre} {alumno.apellidos}
         </h1>
 
-        {/* 🔵 BOTÓN: Asignar materias */}
         <button
-          onClick={() => navigate(`/admin/alumno/${id}/materias`)}
+          onClick={() => navigate(`/app/admin/alumno/${id}/materias`)}
           className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition"
         >
           <MateriasIcon className="h-6 w-6" />
@@ -97,7 +87,6 @@ export default function VerAlumno() {
 
       {/* INFORMACIÓN GENERAL */}
       <section className="bg-white p-6 rounded-xl shadow grid md:grid-cols-2 gap-8">
-
         {/* ALUMNO */}
         <div className="flex items-center gap-4">
           <UserIcon className="h-14 w-14 text-blue-600" />
@@ -105,9 +94,8 @@ export default function VerAlumno() {
             <p className="text-2xl font-semibold">
               {alumno.nombre} {alumno.apellidos}
             </p>
-
             <p className="text-gray-500">
-              {alumno.tb_grupo?.grado} • Grupo {alumno.tb_grupo?.grupo}
+              {alumno.grado} • Grupo {alumno.grupo}
             </p>
           </div>
         </div>
@@ -119,16 +107,16 @@ export default function VerAlumno() {
             <div>
               <p className="text-xl font-semibold">Tutor</p>
               <p className="text-gray-500">
-                {alumno.tb_tutore?.nombre} {alumno.tb_tutore?.apellidos}
+                {alumno.tutor?.nombre} {alumno.tutor?.apellidos}
               </p>
             </div>
           </div>
 
-          {/* 🔵 BOTÓN: ENVIAR NOTIFICACIÓN */}
+          {/* 🔵 BOTÓN CORREGIDO */}
           <button
             onClick={() =>
               navigate(
-                `/notificaciones/enviar?alumno=${alumno.id_alumno}&tutor=${alumno.id_tutor}`
+                `/app/notificaciones/enviar?alumno=${alumno.id_alumno}&tutor=${alumno.id_tutor}`
               )
             }
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -161,7 +149,7 @@ export default function VerAlumno() {
         </div>
       </section>
 
-      {/* MATERIAS Y CALIFICACIONES */}
+      {/* MATERIAS */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <BookOpenIcon className="h-6 w-6 text-purple-600" />
@@ -169,7 +157,7 @@ export default function VerAlumno() {
         </h2>
 
         {materias.length === 0 ? (
-          <p className="text-gray-500">Este alumno no tiene materias.</p>
+          <p className="text-gray-500">Este alumno no tiene materias asignadas.</p>
         ) : (
           <table className="w-full border rounded-lg overflow-hidden">
             <thead>
@@ -178,14 +166,12 @@ export default function VerAlumno() {
                 <th className="p-3 border text-center">Calificación</th>
               </tr>
             </thead>
-
             <tbody>
               {materias.map((m) => (
                 <tr key={m.id_materia}>
                   <td className="p-3 border">
                     {m.tb_materia?.nombre_materia || "Materia sin nombre"}
                   </td>
-
                   <td className="p-3 border text-center font-semibold">
                     {m.calificacion ?? "—"}
                   </td>
@@ -208,10 +194,7 @@ export default function VerAlumno() {
         ) : (
           <ul className="space-y-4">
             {notificaciones.map((n) => (
-              <li
-                key={n.id_notificacion}
-                className="p-4 bg-gray-50 border rounded-lg"
-              >
+              <li key={n.id_notificacion} className="p-4 bg-gray-50 border rounded-lg">
                 <p className="font-semibold">{n.mensaje}</p>
                 <p className="text-sm text-gray-500">
                   {n.fecha_envio} {n.hora_envio}
@@ -221,6 +204,7 @@ export default function VerAlumno() {
           </ul>
         )}
       </section>
+
     </div>
   );
 }

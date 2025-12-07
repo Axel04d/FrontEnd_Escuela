@@ -100,7 +100,7 @@ export default function AsignarMateriasGrupo() {
       }
 
       alert("Materias del grupo actualizadas correctamente.");
-      navigate("/grupos");
+      navigate("/app/grupos");
 
     } catch (error) {
       console.error("Error guardando materias:", error);
@@ -136,7 +136,7 @@ export default function AsignarMateriasGrupo() {
           </button>
 
           <button
-            onClick={() => navigate("/grupos")}
+            onClick={() => navigate("/app/grupos")}
             className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
           >
             Cancelar

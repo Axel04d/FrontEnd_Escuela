@@ -1,120 +1,126 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import api from "../../api/api.js";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import api from "../../api/api";
+import { AuthContext } from "../auth/AuthContext";
+import { ArrowLeftIcon, PaperAirplaneIcon } from "@heroicons/react/24/solid";
 
 export default function EnviarNotificacion() {
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { user } = useContext(AuthContext);
 
-  const preAlumno = searchParams.get("alumno");
-  const preTutor = searchParams.get("tutor");
+  const idAlumno = params.get("alumno");
+  const idTutor = params.get("tutor"); // no se usa para backend pero se muestra
+  const idDocente = user?.id_perfil; // 🔵 EL DOCENTE REAL DEL BACKEND
 
-  const [docentes, setDocentes] = useState([]);
-  const [alumnos, setAlumnos] = useState([]);
+  const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [alumnoInfo, setAlumnoInfo] = useState(null);
 
-  const [form, setForm] = useState({
-    id_docente: "",
-    id_alumno: preAlumno || "",
-    mensaje: "",
-  });
-
+  // ===============================
+  // 🔵 VALIDAR PARÁMETROS
+  // ===============================
   useEffect(() => {
-    Promise.all([api.get("/docentes"), api.get("/alumnos")]).then(
-      ([resDoc, resAl]) => {
-        setDocentes(resDoc.data);
-        setAlumnos(resAl.data);
-
-        // 🔵 Si viene un alumno preseleccionado, lo fijamos
-        if (preAlumno) {
-          setForm((prev) => ({ ...prev, id_alumno: preAlumno }));
-        }
-      }
-    );
-  }, []);
-
-  const onChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const enviar = async () => {
-    if (!form.id_docente || !form.id_alumno || !form.mensaje) {
-      return alert("Todos los campos son necesarios.");
+    if (!idAlumno || !idDocente) {
+      alert("Faltan datos necesarios.");
+      navigate(-1);
+      return;
     }
 
-    await api.post("/notificaciones", form);
+    const cargarAlumno = async () => {
+      try {
+        const res = await api.get(`/alumnos/${idAlumno}`);
+        setAlumnoInfo(res.data);
+      } catch {
+        setAlumnoInfo(null);
+      }
+    };
 
-    alert("Notificación enviada.");
-    navigate("/notificaciones");
+    cargarAlumno();
+  }, [idAlumno, idDocente, navigate]);
+
+  // ===============================
+  // 🔵 ENVIAR NOTIFICACIÓN
+  // ===============================
+  const enviar = async () => {
+    if (!mensaje.trim()) return alert("El mensaje no puede ir vacío.");
+
+    setEnviando(true);
+
+    try {
+      await api.post("/notificaciones", {
+        id_docente: idDocente,   // ✔ OBLIGATORIO PARA EL BACKEND
+        id_alumno: idAlumno,
+        mensaje,
+      });
+
+      alert("Notificación enviada correctamente.");
+      navigate(-1);
+
+    } catch (error) {
+      console.error("Error al enviar notificación:", error);
+      alert("Error al enviar la notificación.");
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
     <div className="space-y-10">
-      <h1 className="text-3xl font-bold">Enviar Notificación</h1>
 
-      <div className="bg-white p-6 rounded-xl shadow space-y-6">
+      {/* BOTÓN REGRESAR */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 w-fit transition"
+      >
+        <ArrowLeftIcon className="h-5 w-5" />
+        Regresar
+      </button>
 
-        {/* DOCENTE */}
-        <div>
-          <label className="font-semibold">Docente que envía</label>
-          <select
-            name="id_docente"
-            className="w-full p-3 border rounded"
-            onChange={onChange}
-          >
-            <option value="">Selecciona un docente</option>
-            {docentes.map((d) => (
-              <option key={d.id_docente} value={d.id_docente}>
-                {d.nombre} {d.apellidos}
-              </option>
-            ))}
-          </select>
+      {/* TÍTULO */}
+      <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+        <PaperAirplaneIcon className="h-8 w-8 text-blue-600" />
+        Enviar Notificación
+      </h1>
+
+      {/* TARJETA */}
+      <div className="bg-white p-8 rounded-2xl shadow-lg space-y-6">
+
+        <p className="text-gray-600">La notificación será enviada a:</p>
+
+        {/* INFO DEL ALUMNO */}
+        <div className="p-4 rounded-xl bg-gray-50 border">
+          {alumnoInfo ? (
+            <>
+              <p className="text-lg font-bold text-gray-800">
+                {alumnoInfo.nombre} {alumnoInfo.apellidos}
+              </p>
+              <p className="text-gray-500 text-sm">
+                ID Alumno: {idAlumno} • ID Docente: {idDocente}
+              </p>
+            </>
+          ) : (
+            <p className="text-gray-500">Alumno #{idAlumno}</p>
+          )}
         </div>
 
-        {/* ALUMNO */}
-        <div>
-          <label className="font-semibold">Alumno destinatario</label>
-          <select
-            name="id_alumno"
-            className="w-full p-3 border rounded"
-            onChange={onChange}
-            value={form.id_alumno}
-          >
-            <option value="">Selecciona un alumno</option>
-            {alumnos.map((a) => (
-              <option key={a.id_alumno} value={a.id_alumno}>
-                {a.nombre} {a.apellidos}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* INPUT DEL MENSAJE */}
+        <textarea
+          className="w-full border rounded-xl p-4 min-h-[140px] text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
+          placeholder="Escribe el mensaje que deseas enviar..."
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+        />
 
-        {/* MENSAJE */}
-        <div>
-          <label className="font-semibold">Mensaje</label>
-          <textarea
-            name="mensaje"
-            className="w-full p-3 border rounded"
-            rows="4"
-            onChange={onChange}
-            placeholder="Escribe la notificación..."
-          ></textarea>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-            onClick={enviar}
-          >
-            Enviar
-          </button>
-
-          <button
-            className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
-            onClick={() => navigate("/notificaciones")}
-          >
-            Cancelar
-          </button>
-        </div>
-
+        {/* BOTÓN ENVIAR */}
+        <button
+          onClick={enviar}
+          disabled={enviando}
+          className="w-full py-3 flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow transition"
+        >
+          <PaperAirplaneIcon className="h-6 w-6" />
+          {enviando ? "Enviando..." : "Enviar Notificación"}
+        </button>
       </div>
     </div>
   );

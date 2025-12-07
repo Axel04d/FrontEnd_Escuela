@@ -10,13 +10,14 @@ import {
   PlusCircleIcon,
   ClipboardDocumentListIcon,
   UsersIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
   const [stats, setStats] = useState({
-    alumnos: 0,
+    alumnos: [],
     docentes: 0,
     tutores: 0,
     notificaciones: [],
@@ -36,11 +37,12 @@ export default function Dashboard() {
           ]);
 
         setStats({
-          alumnos: resAlumnos.data.length,
+          alumnos: resAlumnos.data,
           docentes: resDocentes.data.length,
           tutores: resTutores.data.length,
           notificaciones: resNotificaciones.data.slice(0, 5),
         });
+
       } catch (error) {
         console.error("Error cargando dashboard:", error);
       } finally {
@@ -54,26 +56,29 @@ export default function Dashboard() {
   if (loading) return <p className="text-gray-400 animate-pulse">Cargando panel...</p>;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-16">
 
-      {/* TÍTULO PRINCIPAL */}
+      {/* ======================== TÍTULO ======================== */}
       <div>
-        <h1 className="text-4xl font-extrabold text-gray-800">Panel Administrativo</h1>
+        <h1 className="text-4xl font-extrabold text-gray-800">
+          Panel Administrativo
+        </h1>
         <p className="text-gray-500 mt-1">Resumen general del sistema escolar</p>
       </div>
 
-      {/* == TARJETAS GRANDES == */}
+      {/* ======================== TARJETAS GRANDES ======================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
+
         {/* ALUMNOS */}
         <div
           onClick={() => navigate("/app/alumnos")}
-          className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl 
-                     transition cursor-pointer border-l-8 border-blue-600"
+          className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition cursor-pointer border-l-8 border-blue-600"
         >
           <div className="flex items-center justify-between">
             <UserGroupIcon className="h-14 w-14 text-blue-600" />
-            <span className="text-4xl font-extrabold text-blue-700">{stats.alumnos}</span>
+            <span className="text-4xl font-extrabold text-blue-700">
+              {stats.alumnos.length}
+            </span>
           </div>
           <h2 className="text-xl font-bold mt-4 text-gray-800">Alumnos Registrados</h2>
           <p className="text-gray-500">Gestión completa de estudiantes</p>
@@ -82,12 +87,13 @@ export default function Dashboard() {
         {/* DOCENTES */}
         <div
           onClick={() => navigate("/app/docentes")}
-          className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl 
-                     transition cursor-pointer border-l-8 border-green-600"
+          className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition cursor-pointer border-l-8 border-green-600"
         >
           <div className="flex items-center justify-between">
             <UserIcon className="h-14 w-14 text-green-600" />
-            <span className="text-4xl font-extrabold text-green-700">{stats.docentes}</span>
+            <span className="text-4xl font-extrabold text-green-700">
+              {stats.docentes}
+            </span>
           </div>
           <h2 className="text-xl font-bold mt-4 text-gray-800">Docentes</h2>
           <p className="text-gray-500">Profesores activos en el sistema</p>
@@ -96,12 +102,13 @@ export default function Dashboard() {
         {/* TUTORES */}
         <div
           onClick={() => navigate("/app/tutores")}
-          className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl 
-                     transition cursor-pointer border-l-8 border-orange-500"
+          className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition cursor-pointer border-l-8 border-orange-500"
         >
           <div className="flex items-center justify-between">
             <AcademicCapIcon className="h-14 w-14 text-orange-500" />
-            <span className="text-4xl font-extrabold text-orange-600">{stats.tutores}</span>
+            <span className="text-4xl font-extrabold text-orange-600">
+              {stats.tutores}
+            </span>
           </div>
           <h2 className="text-xl font-bold mt-4 text-gray-800">Tutores</h2>
           <p className="text-gray-500">Padres o tutores registrados</p>
@@ -109,9 +116,7 @@ export default function Dashboard() {
 
       </div>
 
-      {/* ===========================================
-                 ACCIONES RÁPIDAS
-      ============================================ */}
+      {/* ======================== ACCIONES RÁPIDAS ======================== */}
       <div className="bg-white p-8 rounded-2xl shadow space-y-6">
 
         <h2 className="text-2xl font-bold flex items-center gap-3">
@@ -130,8 +135,9 @@ export default function Dashboard() {
             Registrar Alumno
           </button>
 
+          {/* 🔵 YA NO ABRE SIN PARÁMETROS — SELECCIONA ALUMNO */}
           <button
-            onClick={() => navigate("/app/notificaciones/enviar")}
+            onClick={() => navigate("/app/dashboard#seleccionar-alumno")}
             className="flex items-center gap-4 bg-purple-600 hover:bg-purple-700 
                        text-white p-5 rounded-xl shadow text-lg transition"
           >
@@ -150,20 +156,50 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===========================================
-                 ÚLTIMAS NOTIFICACIONES
-      ============================================ */}
-      <div className="bg-white p-8 rounded-2xl shadow">
+      {/* ======================== SELECCIONAR ALUMNO ======================== */}
+      <section id="seleccionar-alumno" className="bg-white p-8 rounded-2xl shadow space-y-6">
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <PaperAirplaneIcon className="h-8 w-8 text-blue-600" />
+          Seleccionar Alumno para Enviar Notificación
+        </h2>
 
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">Últimas Notificaciones</h2>
-          <BellIcon className="h-10 w-10 text-gray-400" />
-        </div>
+        {stats.alumnos.length === 0 ? (
+          <p className="text-gray-500">No hay alumnos registrados.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+            {stats.alumnos.map((al) => (
+              <div
+                key={al.id_alumno}
+                className="bg-gray-50 p-6 rounded-xl shadow border hover:shadow-lg transition"
+              >
+                <h3 className="text-xl font-bold text-gray-800">
+                  {al.nombre} {al.apellidos}
+                </h3>
+                <p className="text-sm text-gray-500">Grupo: {al.grado} - {al.grupo}</p>
+
+                <button
+                  onClick={() =>
+                    navigate(`/app/notificaciones/enviar?alumno=${al.id_alumno}&tutor=${al.id_tutor}`)
+                  }
+                  className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg flex items-center justify-center gap-2"
+                >
+                  <PaperAirplaneIcon className="h-5 w-5" />
+                  Enviar Notificación
+                </button>
+              </div>
+            ))}
+
+          </div>
+        )}
+      </section>
+
+      {/* ======================== ÚLTIMAS NOTIFICACIONES ======================== */}
+      <div className="bg-white p-8 rounded-2xl shadow space-y-6">
+        <h2 className="text-2xl font-bold">Últimas Notificaciones</h2>
 
         {stats.notificaciones.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">
-            No hay notificaciones recientes.
-          </p>
+          <p className="text-gray-500">No hay notificaciones recientes.</p>
         ) : (
           <ul className="space-y-4">
             {stats.notificaciones.map((n) => (
@@ -171,15 +207,14 @@ export default function Dashboard() {
                 key={n.id_notificacion}
                 className="p-4 bg-gray-50 border rounded-xl shadow-sm"
               >
-                <p className="font-semibold text-lg">{n.titulo}</p>
+                <p className="font-semibold text-gray-800">{n.mensaje}</p>
                 <p className="text-sm text-gray-500">
-                  {n.fecha} — {n.hora}
+                  {n.fecha_envio} — {n.hora_envio}
                 </p>
               </li>
             ))}
           </ul>
         )}
-
       </div>
 
     </div>

@@ -50,7 +50,7 @@ export default function CrearAlumno() {
     try {
       await api.post("/alumnos", form);
       alert("Alumno creado correctamente");
-      navigate("/alumnos");
+      navigate("/app/alumnos");
     } catch (error) {
       console.error(error);
       alert("Error al crear alumno.");

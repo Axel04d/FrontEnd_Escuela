@@ -8,7 +8,7 @@ export default function AgregarDocente() {
   const [form, setForm] = useState({
     nombre: "",
     apellidos: "",
-    email: "", // CAMBIO IMPORTANTE
+    email: "",
   });
 
   const onChange = (e) =>
@@ -18,7 +18,7 @@ export default function AgregarDocente() {
     try {
       await api.post("/docentes", form);
       alert("Docente agregado correctamente");
-      navigate("/docentes");
+      navigate("/app/docentes"); // 🔥 RUTA CORRECTA
     } catch (error) {
       console.error(error);
       alert("Error al registrar docente. Verifica los datos.");
@@ -74,7 +74,7 @@ export default function AgregarDocente() {
 
           <button
             className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
-            onClick={() => navigate("/docentes")}
+            onClick={() => navigate("/app/docentes")} // 🔥 CORREGIDO
           >
             Cancelar
           </button>

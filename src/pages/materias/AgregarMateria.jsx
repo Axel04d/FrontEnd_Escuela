@@ -13,7 +13,7 @@ export default function AgregarMateria() {
       nombre_materia: nombre,
     });
 
-    navigate("/materias");
+    navigate("/app/materias");
   };
 
   return (

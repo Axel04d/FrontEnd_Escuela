@@ -57,24 +57,24 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
 
-        {/* ========= RUTA INICIAL — SIEMPRE ADMIN ========= */}
-        <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+        {/* ========= RUTA INICIAL → LOGIN ========= */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* ========= RUTAS PÚBLICAS ========= */}
         <Route path="/login" element={<Login />} />
         <Route path="/activar-cuenta" element={<ActivarCuenta />} />
         <Route path="/debug/roles" element={<SeleccionarRol />} />
 
-        {/* ========= ZONA PRIVADA / APP ========= */}
+        {/* ========= ZONA PRIVADA / APP (Protegida por Layout) ========= */}
         <Route path="/app" element={<Layout />}>
 
           {/* DASHBOARD ADMIN */}
           <Route path="dashboard" element={<Dashboard />} />
 
-          {/* DASHBOARD DOCENTE */}
+          {/* DOCENTES */}
           <Route path="dashboard-docente" element={<DashboardDocente />} />
 
-          {/* DASHBOARD TUTOR */}
+          {/* TUTOR */}
           <Route path="dashboard-tutor" element={<DashboardTutor />} />
 
           {/* ALUMNOS */}
@@ -121,6 +121,9 @@ export default function AppRouter() {
           <Route path="tutor/notificaciones" element={<NotificacionesTutor />} />
 
         </Route>
+
+        {/* Ruta 404 */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

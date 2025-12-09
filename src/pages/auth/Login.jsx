@@ -24,36 +24,24 @@ export default function Login() {
 
       console.log("Respuesta login:", data);
 
-      // 🔴 VALIDACIÓN MÍNIMA
-      if (!data || !data.rol || !data.accessToken) {
-        throw new Error("Datos inválidos del servidor");
+      if (!data?.token || !data?.user?.rol) {
+        throw new Error("El servidor no devolvió datos válidos.");
       }
 
-      // 🔵 GUARDAR SESIÓN COMPLETA EN AuthContext
+      // GUARDAR SESIÓN
       login({
-        id_usuario: data.id_usuario,
-        email: data.email,
-        nombre: data.nombre,
-        rol: data.rol,
-        id_perfil: data.id_perfil,
-        hijos: data.hijos || [], // ⬅️ Para los tutores
-        token: data.accessToken
+        ...data.user,
+        token: data.token
       });
 
-      // 🔵 REDIRECCIÓN POR ROL
-      switch (data.rol) {
-        case "admin":
-          navigate("/app/dashboard");
-          break;
-        case "docente":
-          navigate("/app/dashboard-docente");
-          break;
-        case "tutor":
-          navigate("/app/dashboard-tutor");
-          break;
-        default:
-          navigate("/login");
-      }
+      // REDIRECCIÓN SEGÚN ROL
+      const rol = data.user.rol;
+
+      if (rol === "admin") return navigate("/app/dashboard");
+      if (rol === "docente") return navigate("/app/dashboard-docente");
+      if (rol === "tutor") return navigate("/app/dashboard-tutor");
+
+      navigate("/login");
 
     } catch (error) {
       console.error("Error login:", error);

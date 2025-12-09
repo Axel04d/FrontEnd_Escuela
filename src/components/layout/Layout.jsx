@@ -2,13 +2,18 @@ import { useContext } from "react";
 import { AuthContext } from "../../pages/auth/AuthContext";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { Outlet } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 
 export default function Layout() {
   const { user } = useContext(AuthContext);
 
-  // 🔵 Si no hay sesión → ADMIN por defecto
-  const rol = user?.rol ?? "admin";
+  // ❌ Antes: rol por defecto = admin
+  // ❗ Ahora: si NO hay usuario → redirigir a login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const rol = user.rol;
 
   return (
     <div className="min-h-screen flex">
@@ -19,7 +24,6 @@ export default function Layout() {
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 ml-64 bg-gray-100 min-h-screen">
 
-        {/* HEADER (maneja user null sin problema) */}
         <Header user={user} />
 
         <div className="p-10">

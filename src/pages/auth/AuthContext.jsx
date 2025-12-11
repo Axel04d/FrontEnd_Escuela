@@ -7,9 +7,6 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
 
-  // ======================================================
-  // 🔵 CARGAR SESIÓN DESDE LOCALSTORAGE AL INICIAR
-  // ======================================================
   useEffect(() => {
     const savedUser = localStorage.getItem("usuario");
     const savedToken = localStorage.getItem("token");
@@ -23,16 +20,14 @@ export default function AuthProvider({ children }) {
     }
   }, []);
 
-  // ======================================================
-  // 🔵 LOGIN — GUARDAR SESIÓN
-  // ======================================================
-  const login = ({ id_usuario, email, nombre, rol, id_perfil, hijos, token }) => {
+  const login = ({ id_usuario, email, nombre, rol, id_docente, id_tutor, hijos, token }) => {
     const usuario = {
       id_usuario,
       email,
       nombre,
       rol,
-      id_perfil,
+      id_docente: id_docente || null,
+      id_tutor: id_tutor || null,
       hijos: hijos || []
     };
 
@@ -45,9 +40,6 @@ export default function AuthProvider({ children }) {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   };
 
-  // ======================================================
-  // 🔴 LOGOUT
-  // ======================================================
   const logout = () => {
     localStorage.removeItem("usuario");
     localStorage.removeItem("token");

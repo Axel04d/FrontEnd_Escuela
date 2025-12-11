@@ -9,27 +9,36 @@ export default function EnviarNotificacion() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
-  const idAlumno = params.get("alumno");
-  const idTutor = params.get("tutor"); // no se usa para backend pero se muestra
-  const idDocente = user?.id_perfil; // 🔵 EL DOCENTE REAL DEL BACKEND
+  const idDocente = user?.id_docente; // ✔ CORREGIDO
+  const idAlumnoURL = params.get("alumno");
 
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(idAlumnoURL || "");
+  const [listaAlumnos, setListaAlumnos] = useState([]);
+  const [alumnoInfo, setAlumnoInfo] = useState(null);
   const [mensaje, setMensaje] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [alumnoInfo, setAlumnoInfo] = useState(null);
 
-  // ===============================
-  // 🔵 VALIDAR PARÁMETROS
-  // ===============================
   useEffect(() => {
-    if (!idAlumno || !idDocente) {
-      alert("Faltan datos necesarios.");
-      navigate(-1);
-      return;
+    if (!idAlumnoURL) {
+      const cargarAlumnos = async () => {
+        try {
+          const res = await api.get(`/docentes/${idDocente}/alumnos`);
+          setListaAlumnos(res.data || []);
+        } catch (error) {
+          console.error("Error cargando alumnos:", error);
+        }
+      };
+
+      cargarAlumnos();
     }
+  }, [idAlumnoURL, idDocente]);
+
+  useEffect(() => {
+    if (!alumnoSeleccionado) return;
 
     const cargarAlumno = async () => {
       try {
-        const res = await api.get(`/alumnos/${idAlumno}`);
+        const res = await api.get(`/alumnos/${alumnoSeleccionado}`);
         setAlumnoInfo(res.data);
       } catch {
         setAlumnoInfo(null);
@@ -37,20 +46,18 @@ export default function EnviarNotificacion() {
     };
 
     cargarAlumno();
-  }, [idAlumno, idDocente, navigate]);
+  }, [alumnoSeleccionado]);
 
-  // ===============================
-  // 🔵 ENVIAR NOTIFICACIÓN
-  // ===============================
   const enviar = async () => {
+    if (!alumnoSeleccionado) return alert("Selecciona un alumno.");
     if (!mensaje.trim()) return alert("El mensaje no puede ir vacío.");
 
     setEnviando(true);
 
     try {
       await api.post("/notificaciones", {
-        id_docente: idDocente,   // ✔ OBLIGATORIO PARA EL BACKEND
-        id_alumno: idAlumno,
+        id_docente: idDocente,
+        id_alumno: alumnoSeleccionado,
         mensaje,
       });
 
@@ -67,8 +74,6 @@ export default function EnviarNotificacion() {
 
   return (
     <div className="space-y-10">
-
-      {/* BOTÓN REGRESAR */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 w-fit transition"
@@ -77,42 +82,46 @@ export default function EnviarNotificacion() {
         Regresar
       </button>
 
-      {/* TÍTULO */}
       <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
         <PaperAirplaneIcon className="h-8 w-8 text-blue-600" />
         Enviar Notificación
       </h1>
 
-      {/* TARJETA */}
       <div className="bg-white p-8 rounded-2xl shadow-lg space-y-6">
+        {!idAlumnoURL && (
+          <div>
+            <label className="font-semibold text-gray-700">Selecciona un alumno:</label>
+            <select
+              className="w-full p-3 border rounded-xl mt-2"
+              value={alumnoSeleccionado}
+              onChange={(e) => setAlumnoSeleccionado(e.target.value)}
+            >
+              <option value="">-- Seleccionar --</option>
+              {listaAlumnos.map((a) => (
+                <option key={a.id_alumno} value={a.id_alumno}>
+                  {a.nombre} {a.apellidos}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        <p className="text-gray-600">La notificación será enviada a:</p>
+        {alumnoInfo && (
+          <div className="p-4 rounded-xl bg-gray-50 border">
+            <p className="text-lg font-bold text-gray-800">
+              {alumnoInfo.nombre} {alumnoInfo.apellidos}
+            </p>
+            <p className="text-gray-500 text-sm">ID Alumno: {alumnoSeleccionado}</p>
+          </div>
+        )}
 
-        {/* INFO DEL ALUMNO */}
-        <div className="p-4 rounded-xl bg-gray-50 border">
-          {alumnoInfo ? (
-            <>
-              <p className="text-lg font-bold text-gray-800">
-                {alumnoInfo.nombre} {alumnoInfo.apellidos}
-              </p>
-              <p className="text-gray-500 text-sm">
-                ID Alumno: {idAlumno} • ID Docente: {idDocente}
-              </p>
-            </>
-          ) : (
-            <p className="text-gray-500">Alumno #{idAlumno}</p>
-          )}
-        </div>
-
-        {/* INPUT DEL MENSAJE */}
         <textarea
           className="w-full border rounded-xl p-4 min-h-[140px] text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
-          placeholder="Escribe el mensaje que deseas enviar..."
+          placeholder="Escribe el mensaje..."
           value={mensaje}
           onChange={(e) => setMensaje(e.target.value)}
         />
 
-        {/* BOTÓN ENVIAR */}
         <button
           onClick={enviar}
           disabled={enviando}

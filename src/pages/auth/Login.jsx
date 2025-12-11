@@ -22,29 +22,37 @@ export default function Login() {
       const res = await api.post("/auth/login", form);
       const data = res.data;
 
-      console.log("Respuesta login:", data);
+      console.log("🔍 Respuesta login:", data);
 
-      if (!data?.token || !data?.user?.rol) {
-        throw new Error("El servidor no devolvió datos válidos.");
+      if (!data?.accessToken || !data?.rol) {
+        throw new Error("El servidor devolvió datos incompletos.");
       }
 
-      // GUARDAR SESIÓN
+      // Construir usuario acorde al backend
+      const usuario = {
+        id_usuario: data.id_usuario,
+        email: data.email,
+        nombre: data.nombre_completo ?? data.nombre,
+        rol: data.rol,
+        id_docente: data.id_docente || null,
+        id_tutor: data.id_tutor || null,
+        hijos: data.hijos || []
+      };
+
       login({
-        ...data.user,
-        token: data.token
+        ...usuario,
+        token: data.accessToken
       });
 
-      // REDIRECCIÓN SEGÚN ROL
-      const rol = data.user.rol;
-
-      if (rol === "admin") return navigate("/app/dashboard");
-      if (rol === "docente") return navigate("/app/dashboard-docente");
-      if (rol === "tutor") return navigate("/app/dashboard-tutor");
+      // Redirección por rol
+      if (data.rol === "admin") return navigate("/app/dashboard");
+      if (data.rol === "docente") return navigate("/app/dashboard-docente");
+      if (data.rol === "tutor") return navigate("/app/dashboard-tutor");
 
       navigate("/login");
 
     } catch (error) {
-      console.error("Error login:", error);
+      console.error("❌ Error login:", error);
       setErrorMsg("Credenciales incorrectas o servidor no disponible.");
     } finally {
       setLoading(false);
@@ -60,9 +68,7 @@ export default function Login() {
         </h1>
 
         {errorMsg && (
-          <p className="text-red-500 text-center font-semibold">
-            {errorMsg}
-          </p>
+          <p className="text-red-500 text-center font-semibold">{errorMsg}</p>
         )}
 
         <div>

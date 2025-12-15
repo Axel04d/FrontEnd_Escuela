@@ -1,8 +1,7 @@
-// src/api/api.js
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://192.168.59.43:3000/api",
+  baseURL: "https://alerta-temprana-g0kp.onrender.com/api",
 });
 
 // 🔐 INTERCEPTOR: agrega token a TODAS las peticiones

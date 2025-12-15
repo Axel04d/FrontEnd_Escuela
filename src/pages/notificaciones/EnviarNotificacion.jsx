@@ -9,30 +9,55 @@ export default function EnviarNotificacion() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
-  const idDocente = user?.id_docente; // ✔ CORREGIDO
+  // 🔐 ID REAL DEL DOCENTE
+  const idDocente = user?.id_perfil;
   const idAlumnoURL = params.get("alumno");
 
-  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(idAlumnoURL || "");
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(
+    idAlumnoURL ? Number(idAlumnoURL) : ""
+  );
   const [listaAlumnos, setListaAlumnos] = useState([]);
   const [alumnoInfo, setAlumnoInfo] = useState(null);
   const [mensaje, setMensaje] = useState("");
   const [enviando, setEnviando] = useState(false);
 
+  // 🔐 Validación de sesión
   useEffect(() => {
-    if (!idAlumnoURL) {
-      const cargarAlumnos = async () => {
-        try {
-          const res = await api.get(`/docentes/${idDocente}/alumnos`);
-          setListaAlumnos(res.data || []);
-        } catch (error) {
-          console.error("Error cargando alumnos:", error);
-        }
-      };
-
-      cargarAlumnos();
+    if (!user || user.rol !== "docente" || !idDocente) {
+      alert("Sesión inválida. Inicia sesión nuevamente.");
+      navigate("/login");
     }
+  }, [user, idDocente, navigate]);
+
+  // 📌 Cargar alumnos del docente (SIN ruta inexistente)
+  useEffect(() => {
+    if (idAlumnoURL) return;
+
+    const cargarAlumnos = async () => {
+      try {
+        const resAlumnos = await api.get("/alumnos");
+        const resGrupos = await api.get("/grupos");
+
+        // Grupos asignados al docente
+        const misGrupos = resGrupos.data
+          .filter((g) => Number(g.id_docente) === Number(idDocente))
+          .map((g) => g.id_grupo);
+
+        // Alumnos que pertenecen a esos grupos
+        const misAlumnos = resAlumnos.data.filter((a) =>
+          misGrupos.includes(a.id_grupo)
+        );
+
+        setListaAlumnos(misAlumnos);
+      } catch (error) {
+        console.error("Error cargando alumnos del docente:", error);
+      }
+    };
+
+    cargarAlumnos();
   }, [idAlumnoURL, idDocente]);
 
+  // 📌 Cargar info del alumno seleccionado
   useEffect(() => {
     if (!alumnoSeleccionado) return;
 
@@ -48,22 +73,26 @@ export default function EnviarNotificacion() {
     cargarAlumno();
   }, [alumnoSeleccionado]);
 
+  // 🚀 ENVIAR NOTIFICACIÓN
   const enviar = async () => {
-    if (!alumnoSeleccionado) return alert("Selecciona un alumno.");
-    if (!mensaje.trim()) return alert("El mensaje no puede ir vacío.");
+    if (!alumnoSeleccionado)
+      return alert("Selecciona un alumno.");
+    if (!mensaje.trim())
+      return alert("El mensaje no puede ir vacío.");
+
+    const payload = {
+      id_docente: idDocente,
+      id_alumno: alumnoSeleccionado,
+      mensaje: mensaje.trim(),
+    };
 
     setEnviando(true);
 
     try {
-      await api.post("/notificaciones", {
-        id_docente: idDocente,
-        id_alumno: alumnoSeleccionado,
-        mensaje,
-      });
+      await api.post("/notificaciones", payload);
 
       alert("Notificación enviada correctamente.");
       navigate(-1);
-
     } catch (error) {
       console.error("Error al enviar notificación:", error);
       alert("Error al enviar la notificación.");
@@ -90,11 +119,15 @@ export default function EnviarNotificacion() {
       <div className="bg-white p-8 rounded-2xl shadow-lg space-y-6">
         {!idAlumnoURL && (
           <div>
-            <label className="font-semibold text-gray-700">Selecciona un alumno:</label>
+            <label className="font-semibold text-gray-700">
+              Selecciona un alumno:
+            </label>
             <select
               className="w-full p-3 border rounded-xl mt-2"
               value={alumnoSeleccionado}
-              onChange={(e) => setAlumnoSeleccionado(e.target.value)}
+              onChange={(e) =>
+                setAlumnoSeleccionado(Number(e.target.value))
+              }
             >
               <option value="">-- Seleccionar --</option>
               {listaAlumnos.map((a) => (
@@ -111,7 +144,9 @@ export default function EnviarNotificacion() {
             <p className="text-lg font-bold text-gray-800">
               {alumnoInfo.nombre} {alumnoInfo.apellidos}
             </p>
-            <p className="text-gray-500 text-sm">ID Alumno: {alumnoSeleccionado}</p>
+            <p className="text-gray-500 text-sm">
+              ID Alumno: {alumnoSeleccionado}
+            </p>
           </div>
         )}
 

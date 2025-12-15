@@ -5,30 +5,27 @@ export const AuthContext = createContext();
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   useEffect(() => {
     const savedUser = localStorage.getItem("usuario");
     const savedToken = localStorage.getItem("token");
 
     if (savedUser && savedToken) {
-      const parsed = JSON.parse(savedUser);
-      setUser(parsed);
+      setUser(JSON.parse(savedUser));
       setToken(savedToken);
-
       api.defaults.headers.common["Authorization"] = `Bearer ${savedToken}`;
     }
   }, []);
 
-  const login = ({ id_usuario, email, nombre, rol, id_docente, id_tutor, hijos, token }) => {
+  const login = ({ id_usuario, id_perfil, email, nombre, rol, hijos, token }) => {
     const usuario = {
       id_usuario,
+      id_perfil, // null para admin ✔
       email,
       nombre,
       rol,
-      id_docente: id_docente || null,
-      id_tutor: id_tutor || null,
-      hijos: hijos || []
+      hijos: hijos || [],
     };
 
     localStorage.setItem("usuario", JSON.stringify(usuario));

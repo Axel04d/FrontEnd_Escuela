@@ -1,20 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../api/api.js";
+import api from "../../api/api";
+import { AuthContext } from "../auth/AuthContext";
 
 export default function AsignarMateriasGrupo() {
   const { id } = useParams(); // id del grupo
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
   const [materias, setMaterias] = useState([]);
   const [alumnosGrupo, setAlumnosGrupo] = useState([]);
   const [seleccionadas, setSeleccionadas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // 🔵 Cargar materias, alumnos y materias asignadas
+  /* ===============================
+     🔐 SOLO ADMIN O DOCENTE
+     =============================== */
   useEffect(() => {
+    if (user && !["admin", "docente"].includes(user.rol)) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  /* ===============================
+     CARGAR DATOS INICIALES
+     =============================== */
+  useEffect(() => {
+    if (!user) return;
+
     const cargarDatos = async () => {
       try {
-        // 1️⃣ Cargar TODAS las materias
+        // 1️⃣ Materias
         const resMaterias = await api.get("/materias");
         setMaterias(resMaterias.data);
 
@@ -25,88 +41,97 @@ export default function AsignarMateriasGrupo() {
         );
         setAlumnosGrupo(alumnosFiltrados);
 
-        // 3️⃣ De alumnos → materias reales asignadas
+        // 3️⃣ Materias ya asignadas (UNA SOLA PASADA)
         const materiasSet = new Set();
 
-        for (const alumno of alumnosFiltrados) {
-          try {
-            const resAM = await api.get(
-              `/alumnomateria/alumno/${alumno.id_alumno}`
+        await Promise.all(
+          alumnosFiltrados.map(async (al) => {
+            const res = await api.get(
+              `/alumnomateria/alumno/${al.id_alumno}`
             );
-
-            resAM.data.forEach((m) => materiasSet.add(m.id_materia));
-          } catch (err) {
-            console.warn("No se pudieron cargar materias de alumno", alumno.id_alumno);
-          }
-        }
+            res.data.forEach((m) => materiasSet.add(m.id_materia));
+          })
+        );
 
         setSeleccionadas(Array.from(materiasSet));
 
-      } catch (err) {
-        console.error("Error cargando datos:", err);
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     cargarDatos();
-  }, [id]);
+  }, [id, user]);
 
-  // 📌 Seleccionar/deseleccionar materia
+  /* ===============================
+     TOGGLE DE MATERIAS
+     =============================== */
   const toggleMateria = (idMateria) => {
-    if (seleccionadas.includes(idMateria)) {
-      setSeleccionadas(seleccionadas.filter((m) => m !== idMateria));
-    } else {
-      setSeleccionadas([...seleccionadas, idMateria]);
-    }
+    setSeleccionadas((prev) =>
+      prev.includes(idMateria)
+        ? prev.filter((m) => m !== idMateria)
+        : [...prev, idMateria]
+    );
   };
 
-  // 🔥 GUARDAR CAMBIOS
+  /* ===============================
+     GUARDAR CAMBIOS
+     =============================== */
   const guardar = async () => {
     try {
-      // 1️⃣ QUITAR materias que ya no están seleccionadas
+      const operaciones = [];
+
       for (const alumno of alumnosGrupo) {
-        const resAM = await api.get(
+        const res = await api.get(
           `/alumnomateria/alumno/${alumno.id_alumno}`
         );
 
-        for (const relacion of resAM.data) {
-          if (!seleccionadas.includes(relacion.id_materia)) {
-            await api.delete(
-              `/alumnomateria/${alumno.id_alumno}/${relacion.id_materia}`
+        const actuales = res.data.map((r) => r.id_materia);
+
+        // ❌ quitar
+        actuales
+          .filter((idMat) => !seleccionadas.includes(idMat))
+          .forEach((idMat) => {
+            operaciones.push(
+              api.delete(`/alumnomateria/${alumno.id_alumno}/${idMat}`)
             );
-          }
-        }
+          });
+
+        // ➕ agregar
+        seleccionadas
+          .filter((idMat) => !actuales.includes(idMat))
+          .forEach((idMat) => {
+            operaciones.push(
+              api.post("/alumnomateria", {
+                id_alumno: alumno.id_alumno,
+                id_materia: idMat,
+              })
+            );
+          });
       }
 
-      // 2️⃣ AGREGAR materias nuevas
-      for (const id_materia of seleccionadas) {
-        for (const alumno of alumnosGrupo) {
+      await Promise.all(operaciones);
 
-          // ✔ Primero verificamos si ya existe en el backend
-          const resMat = await api.get(
-            `/alumnomateria/alumno/${alumno.id_alumno}`
-          );
-
-          const yaExiste = resMat.data.some(
-            (r) => Number(r.id_materia) === Number(id_materia)
-          );
-
-          if (!yaExiste) {
-            await api.post("/alumnomateria", {
-              id_alumno: alumno.id_alumno,
-              id_materia,
-            });
-          }
-        }
-      }
-
-      alert("Materias del grupo actualizadas correctamente.");
+      alert("Materias del grupo actualizadas correctamente");
       navigate("/app/grupos");
 
     } catch (error) {
       console.error("Error guardando materias:", error);
-      alert("Ocurrió un error al guardar los cambios.");
+      alert("Error al guardar los cambios.");
     }
   };
+
+  /* ===============================
+     UI STATES
+     =============================== */
+  if (loading)
+    return (
+      <p className="text-gray-400 animate-pulse">
+        Cargando materias del grupo...
+      </p>
+    );
 
   return (
     <div className="space-y-10">
@@ -123,7 +148,7 @@ export default function AsignarMateriasGrupo() {
               checked={seleccionadas.includes(m.id_materia)}
               onChange={() => toggleMateria(m.id_materia)}
             />
-            {m.nombre_materia}
+            <span>{m.nombre_materia}</span>
           </label>
         ))}
 

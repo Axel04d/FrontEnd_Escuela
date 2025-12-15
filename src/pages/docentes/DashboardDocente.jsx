@@ -1,15 +1,15 @@
 import { useEffect, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../api/api.js";
+import api from "../../api/api";
 import { AuthContext } from "../auth/AuthContext";
 
 import {
   UserGroupIcon,
   UsersIcon,
   BellAlertIcon,
-  ClipboardDocumentListIcon,
   BookOpenIcon,
   PaperAirplaneIcon,
+  IdentificationIcon,
 } from "@heroicons/react/24/outline";
 
 export default function DashboardDocente() {
@@ -21,35 +21,23 @@ export default function DashboardDocente() {
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ================================
-  // 🔵 CARGAR GRUPOS, ALUMNOS Y NOTIFICACIONES DEL DOCENTE
-  // ================================
+  // 🔐 Protección + carga de datos SOLO del docente
   useEffect(() => {
+    if (!user || user.rol !== "docente" || !user.id_perfil) return;
+
     const cargarDatos = async () => {
       try {
-        const resGrupos = await api.get("/grupos");
-        const resAlumnos = await api.get("/alumnos");
-        const resNotif = await api.get("/notificaciones");
+        const [resGrupos, resAlumnos, resNotif] = await Promise.all([
+          api.get(`/docentes/${user.id_perfil}/grupos`),
+          api.get(`/docentes/${user.id_perfil}/alumnos`),
+          api.get(`/notificaciones/docente/${user.id_perfil}`),
+        ]);
 
-        setGrupos(resGrupos.data);
-
-        // FILTRAR alumnos que pertenecen a los grupos del docente
-        const idsMisGrupos = resGrupos.data.map((g) => g.id_grupo);
-        const alumnosDelDocente = resAlumnos.data.filter((a) =>
-          idsMisGrupos.includes(a.id_grupo)
-        );
-
-        setAlumnos(alumnosDelDocente);
-
-        // Últimas notificaciones del docente
-        const misNotificaciones = resNotif.data
-          .filter((n) => n.id_docente === user.id_perfil)
-          .slice(0, 5);
-
-        setNotificaciones(misNotificaciones);
-
+        setGrupos(resGrupos.data || []);
+        setAlumnos(resAlumnos.data || []);
+        setNotificaciones((resNotif.data || []).slice(0, 5));
       } catch (error) {
-        console.error("Error cargando dashboard docente:", error);
+        console.error("Error dashboard docente:", error);
       } finally {
         setLoading(false);
       }
@@ -58,8 +46,13 @@ export default function DashboardDocente() {
     cargarDatos();
   }, [user]);
 
-  if (loading)
-    return <p className="text-gray-400 animate-pulse">Cargando panel...</p>;
+  if (loading) {
+    return (
+      <p className="text-gray-400 animate-pulse">
+        Cargando panel del docente...
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-16">
@@ -70,90 +63,100 @@ export default function DashboardDocente() {
           Panel del Docente
         </h1>
         <p className="text-gray-500 mt-1">
-          Bienvenido profesor, aquí puedes gestionar tus grupos, alumnos y notificaciones.
+          Consulta tu información, grupos y alumnos asignados.
         </p>
       </header>
 
-      {/* ==================== TARJETAS PRINCIPALES ==================== */}
+      {/* ==================== PERFIL DEL DOCENTE ==================== */}
+      <section className="bg-white p-8 rounded-2xl shadow space-y-4">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <IdentificationIcon className="h-7 w-7 text-blue-600" />
+          Mi Perfil
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+          <p>
+            <span className="font-semibold">Nombre:</span>{" "}
+            {user.nombre}
+          </p>
+          <p>
+            <span className="font-semibold">Correo:</span>{" "}
+            {user.email}
+          </p>
+          <p>
+            <span className="font-semibold">Rol:</span>{" "}
+            Docente
+          </p>
+          <p>
+            <span className="font-semibold">ID Docente:</span>{" "}
+            {user.id_perfil}
+          </p>
+        </div>
+      </section>
+
+      {/* ==================== TARJETAS RESUMEN ==================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
-        {/* GRUPOS */}
+        {/* MIS GRUPOS */}
         <Link
           to="/app/grupos"
           className="bg-white p-8 rounded-2xl border-l-8 border-blue-600 shadow hover:shadow-xl transition"
         >
-          <div className="flex justify-between items-center">
-            <UserGroupIcon className="h-14 w-14 text-blue-600" />
-            <span className="text-4xl font-extrabold text-blue-700">
-              {grupos.length}
-            </span>
-          </div>
-          <h2 className="text-xl font-bold mt-4">Mis Grupos</h2>
-          <p className="text-gray-500 text-sm">Consulta tus grupos asignados.</p>
+          <UserGroupIcon className="h-14 w-14 text-blue-600" />
+          <h2 className="text-xl font-bold mt-4">
+            Mis Grupos ({grupos.length})
+          </h2>
         </Link>
 
-        {/* ALUMNOS */}
+        {/* MIS ALUMNOS */}
         <div className="bg-white p-8 rounded-2xl border-l-8 border-green-600 shadow">
-          <div className="flex justify-between items-center">
-            <UsersIcon className="h-14 w-14 text-green-600" />
-            <span className="text-4xl font-extrabold text-green-700">
-              {alumnos.length}
-            </span>
-          </div>
-          <h2 className="text-xl font-bold mt-4">Mis Alumnos</h2>
-          <p className="text-gray-500 text-sm">Alumnos que pertenecen a tus grupos.</p>
+          <UsersIcon className="h-14 w-14 text-green-600" />
+          <h2 className="text-xl font-bold mt-4">
+            Mis Alumnos ({alumnos.length})
+          </h2>
         </div>
 
         {/* NOTIFICACIONES */}
         <Link
           to="/app/notificaciones"
-          className="bg-white p-8 rounded-2xl shadow border-l-8 border-yellow-500 hover:shadow-xl transition"
+          className="bg-white p-8 rounded-2xl border-l-8 border-yellow-500 shadow hover:shadow-xl transition"
         >
-          <div className="flex justify-between items-center">
-            <BellAlertIcon className="h-14 w-14 text-yellow-600" />
-            <span className="text-4xl font-extrabold text-yellow-600">
-              {notificaciones.length}
-            </span>
-          </div>
-          <h2 className="text-xl font-bold mt-4">Notificaciones</h2>
-          <p className="text-gray-500 text-sm">Mensajes enviados recientemente.</p>
+          <BellAlertIcon className="h-14 w-14 text-yellow-600" />
+          <h2 className="text-xl font-bold mt-4">
+            Notificaciones ({notificaciones.length})
+          </h2>
         </Link>
-
       </div>
 
-      {/* =====================================================
-           LISTA DE ALUMNOS + ENVIAR NOTIFICACIÓN DESDE AQUÍ
-         ===================================================== */}
+      {/* ==================== LISTA DE ALUMNOS ==================== */}
       <section className="bg-white p-8 rounded-2xl shadow space-y-6">
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <UsersIcon className="h-8 w-8 text-blue-600" />
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <BookOpenIcon className="h-8 w-8 text-blue-600" />
           Mis Alumnos
         </h2>
 
         {alumnos.length === 0 ? (
-          <p className="text-gray-500">No tienes alumnos asignados.</p>
+          <p className="text-gray-500">
+            No tienes alumnos asignados.
+          </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {alumnos.map((al) => (
               <div
                 key={al.id_alumno}
-                className="p-6 bg-gray-50 rounded-xl shadow border hover:shadow-md transition"
+                className="p-6 bg-gray-50 rounded-xl shadow border"
               >
                 <h3 className="text-xl font-bold text-gray-800">
                   {al.nombre} {al.apellidos}
                 </h3>
 
-                <p className="text-gray-500 text-sm mt-1">
-                  Grupo: {al.grado} - {al.grupo}
-                </p>
-
                 <button
                   onClick={() =>
                     navigate(
-                      `/app/notificaciones/enviar?alumno=${al.id_alumno}&tutor=${al.id_tutor}`
+                      `/app/notificaciones/enviar?alumno=${al.id_alumno}`
                     )
                   }
-                  className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg flex items-center justify-center gap-2 transition"
+                  className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg flex items-center justify-center gap-2"
                 >
                   <PaperAirplaneIcon className="h-5 w-5" />
                   Enviar Notificación
@@ -161,32 +164,6 @@ export default function DashboardDocente() {
               </div>
             ))}
           </div>
-        )}
-      </section>
-
-      {/* ==================== ACTIVIDAD RECIENTE ==================== */}
-      <section className="bg-white p-8 rounded-2xl shadow space-y-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <BookOpenIcon className="h-8 w-8 text-gray-700" />
-          Actividad Reciente
-        </h2>
-
-        {notificaciones.length === 0 ? (
-          <p className="text-gray-500">No hay actividad reciente.</p>
-        ) : (
-          <ul className="space-y-4">
-            {notificaciones.map((n) => (
-              <li
-                key={n.id_notificacion}
-                className="p-4 bg-gray-50 border rounded-xl shadow-sm"
-              >
-                <p className="font-semibold">{n.mensaje}</p>
-                <p className="text-sm text-gray-500">
-                  {n.fecha_envio} — {n.hora_envio}
-                </p>
-              </li>
-            ))}
-          </ul>
         )}
       </section>
 

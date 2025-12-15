@@ -1,121 +1,130 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/api";
+import { AuthContext } from "../auth/AuthContext";
 
 export default function AsignarAlumnosGrupo() {
   const { id } = useParams(); // id del grupo
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
   const [grupo, setGrupo] = useState(null);
   const [alumnos, setAlumnos] = useState([]);
   const [seleccionados, setSeleccionados] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ---------------------------------------
-  // Cargar datos iniciales: Grupo + Alumnos
-  // ---------------------------------------
+  /* ===============================
+     🔐 SOLO ADMIN PUEDE ENTRAR
+     =============================== */
   useEffect(() => {
+    if (user && user.rol !== "admin") {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  /* ===============================
+     CARGA DE GRUPO Y ALUMNOS
+     =============================== */
+  useEffect(() => {
+    if (!user || user.rol !== "admin") return;
+
     const cargarDatos = async () => {
       try {
-        // Cargar información del grupo
-        const grupoRes = await api.get(`/grupos/${id}`);
-        setGrupo(grupoRes.data);
+        const [grupoRes, alumnosRes] = await Promise.all([
+          api.get(`/grupos/${id}`),
+          api.get("/alumnos"),
+        ]);
 
-        // Cargar todos los alumnos
-        const alumnosRes = await api.get("/alumnos");
+        setGrupo(grupoRes.data);
         setAlumnos(alumnosRes.data);
 
-        // Detectar alumnos ya asignados al grupo
         const yaAsignados = alumnosRes.data
-          .filter((a) => a.id_grupo === Number(id))
+          .filter((a) => Number(a.id_grupo) === Number(id))
           .map((a) => a.id_alumno);
 
         setSeleccionados(yaAsignados);
 
-      } catch (err) {
-        console.error("Error cargando datos:", err);
+      } catch (error) {
+        console.error("Error cargando datos:", error);
       } finally {
         setLoading(false);
       }
     };
 
     cargarDatos();
-  }, [id]);
+  }, [id, user]);
 
-  // ---------------------------------------
-  // Seleccionar o deseleccionar alumno
-  // ---------------------------------------
+  /* ===============================
+     SELECCIONAR / DESELECCIONAR
+     =============================== */
   const toggleAlumno = (idAlumno) => {
-    if (seleccionados.includes(idAlumno)) {
-      setSeleccionados(seleccionados.filter((a) => a !== idAlumno));
-    } else {
-      setSeleccionados([...seleccionados, idAlumno]);
-    }
+    setSeleccionados((prev) =>
+      prev.includes(idAlumno)
+        ? prev.filter((a) => a !== idAlumno)
+        : [...prev, idAlumno]
+    );
   };
 
-  // ---------------------------------------
-  // Guardar asignaciones finales
-  // ---------------------------------------
+  /* ===============================
+     GUARDAR CAMBIOS
+     =============================== */
   const guardar = async () => {
     try {
-      // Desasignar alumnos que ya no están marcados
+      const promises = [];
+
       for (const alumno of alumnos) {
-        if (
-          alumno.id_grupo === Number(id) &&
-          !seleccionados.includes(alumno.id_alumno)
-        ) {
-          await api.put(`/alumnos/${alumno.id_alumno}`, {
-            id_grupo: null,
-          });
+        const debeEstar =
+          seleccionados.includes(alumno.id_alumno) ? Number(id) : null;
+
+        if (alumno.id_grupo !== debeEstar) {
+          promises.push(
+            api.put(`/alumnos/${alumno.id_alumno}`, {
+              id_grupo: debeEstar,
+            })
+          );
         }
       }
 
-      // Asignar alumnos seleccionados
-      for (const idAlumno of seleccionados) {
-        await api.put(`/alumnos/${idAlumno}`, {
-          id_grupo: id,
-        });
-      }
+      await Promise.all(promises);
 
       alert("Asignación actualizada correctamente");
       navigate("/app/grupos");
 
-    } catch (err) {
-      console.error("Error guardando cambios:", err);
-      alert("Hubo un error al guardar los cambios.");
+    } catch (error) {
+      console.error("Error guardando asignación:", error);
+      alert("Error al guardar los cambios.");
     }
   };
 
-  // ---------------------------------------
-  // Loading y errores
-  // ---------------------------------------
+  /* ===============================
+     LOADING / ERRORES
+     =============================== */
   if (loading)
     return <p className="text-gray-400 animate-pulse">Cargando alumnos...</p>;
 
   if (!grupo)
-    return <p className="text-red-600">No se encontró el grupo.</p>;
+    return <p className="text-red-600">Grupo no encontrado.</p>;
 
-  // ---------------------------------------
-  // Filtrar alumnos
-  // ---------------------------------------
-  const alumnosDelGrupo = alumnos.filter((a) => a.id_grupo === Number(id));
+  const alumnosDelGrupo = alumnos.filter(
+    (a) => Number(a.id_grupo) === Number(id)
+  );
+
   const alumnosSinGrupo = alumnos.filter(
-    (a) => !a.id_grupo || a.id_grupo === null
+    (a) => !a.id_grupo
   );
 
   return (
     <div className="space-y-10">
-      {/* Título dinámico */}
       <h1 className="text-3xl font-bold">
         Asignar alumnos a {grupo.grado}° {grupo.grupo}
       </h1>
 
-      {/* Alumnos asignados actualmente */}
+      {/* ALUMNOS DEL GRUPO */}
       <section className="bg-white p-6 rounded-xl shadow space-y-4">
         <h2 className="text-xl font-semibold">Alumnos del grupo</h2>
 
         {alumnosDelGrupo.length === 0 ? (
-          <p className="text-gray-500">No hay alumnos asignados aún.</p>
+          <p className="text-gray-500">No hay alumnos asignados.</p>
         ) : (
           alumnosDelGrupo.map((a) => (
             <label
@@ -133,12 +142,12 @@ export default function AsignarAlumnosGrupo() {
         )}
       </section>
 
-      {/* Alumnos disponibles para asignar */}
+      {/* ALUMNOS SIN GRUPO */}
       <section className="bg-white p-6 rounded-xl shadow space-y-4">
         <h2 className="text-xl font-semibold">Alumnos sin grupo</h2>
 
         {alumnosSinGrupo.length === 0 ? (
-          <p className="text-gray-500">Todos los alumnos ya están asignados.</p>
+          <p className="text-gray-500">Todos los alumnos tienen grupo.</p>
         ) : (
           alumnosSinGrupo.map((a) => (
             <label
@@ -150,15 +159,13 @@ export default function AsignarAlumnosGrupo() {
                 checked={seleccionados.includes(a.id_alumno)}
                 onChange={() => toggleAlumno(a.id_alumno)}
               />
-              <span>
-                {a.nombre} {a.apellidos}
-              </span>
+              <span>{a.nombre} {a.apellidos}</span>
             </label>
           ))
         )}
       </section>
 
-      {/* Botones */}
+      {/* BOTONES */}
       <div className="flex gap-4 pt-4">
         <button
           onClick={guardar}
@@ -168,7 +175,7 @@ export default function AsignarAlumnosGrupo() {
         </button>
 
         <button
-          onClick={() => navigate("app/grupos")}
+          onClick={() => navigate("/app/grupos")}
           className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500"
         >
           Cancelar
